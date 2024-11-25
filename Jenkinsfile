@@ -1,36 +1,16 @@
 pipeline {
-    agent any
-    environment {
-        DOCKER_IMAGE = 'rrksrb/cw'
-        IMAGE_TAG = "${env.BUILD_NUMBER}" // Correctly use env.BUILD_NUMBER
-    }
+      agent any
+    
     stages {
-        stage('checkout') {
-            steps {
-                git 'https://github.com/rameshkalluri/CounterWebApp.git'
-            }
-        }
-        stage('build') {
-            steps {
-                bat 'mvn clean install'
-            }
-        }
-        stage('Docker build') {
-            steps {
-                bat 'docker build -t cw .'
-            }
-        }      
-        stage('Docker tag') {
-            steps {
-                bat "docker tag cw:latest ${DOCKER_IMAGE}:${IMAGE_TAG}"
-            }
-        }      
-        stage('publish to registry') {
+        stage("Maven Build") {
             steps{
-                withDockerRegistry(credentialsId: 'docker', url: 'https://index.docker.io/v1/') {
-                    bat "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
-                }
+                sh 'mvn clean install'
             }
-        }
+        }  
+        stage("tomcat deployment") {
+            steps{
+                deploy adapters: [tomcat9(credentialsId: '021b0d82-9cd9-4a06-bfbb-70cee88a9aa0', path: '', url: 'http://35.154.29.170:8090')], contextPath: '/devi', war: '**/*.war'
+            }
+        }    
     }
 }
